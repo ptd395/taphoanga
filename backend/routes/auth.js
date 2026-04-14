@@ -52,7 +52,7 @@ router.post('/forgot-password', (req, res) => {
 
 // POST /api/auth/verify-otp
 router.post('/verify-otp', (req, res) => {
-  const { sdt, otp, matkhau_moi } = req.body;
+  const { sdt, otp } = req.body;
   if (!sdt || !otp) return res.status(400).json({ message: 'Thiếu thông tin xác thực' });
 
   const record = otpStore[sdt];
@@ -63,16 +63,33 @@ router.post('/verify-otp', (req, res) => {
   }
   if (record.otp !== otp) return res.status(400).json({ message: 'OTP không đúng' });
 
-  if (matkhau_moi) {
-    const db = getDb();
-    const hashed = bcrypt.hashSync(matkhau_moi, 10);
-    db.prepare('UPDATE TAIKHOAN SET MATKHAU = ? WHERE MATK = ?').run(hashed, record.matk);
-    delete otpStore[sdt];
-    return res.json({ message: 'Đặt lại mật khẩu thành công' });
-  }
-
+  // Lấy mật khẩu gốc (demo: trả về plaintext lưu trong store)
   delete otpStore[sdt];
-  res.json({ message: 'Xác thực OTP thành công' });
+  // Demo: gửi SMS chứa mật khẩu - ở đây chỉ trả về thông báo thành công
+  res.json({ message: 'Mật khẩu đã được gửi đến số điện thoại của bạn. Vui lòng kiểm tra và đăng nhập lại.' });
+});
+
+// POST /api/auth/reset-password
+router.post('/reset-password', (req, res) => {
+  const { sdt, matkhau_moi, xacnhan } = req.body;
+  if (!sdt || !matkhau_moi || !xacnhan) return res.status(400).json({ message: 'Thiếu thông tin' });
+
+  // 1. Kiểm tra xác nhận khớp
+  if (matkhau_moi !== xacnhan)
+    return res.status(400).json({ field: 'xacnhan', message: 'Mật khẩu xác nhận không khớp với mật khẩu mới.' });
+
+  // 2. Kiểm tra độ mạnh
+  const pwRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,32}$/;
+  if (!pwRegex.test(matkhau_moi))
+    return res.status(400).json({ field: 'matkhau_moi', message: 'Mật khẩu cần chứa 8-32 ký tự, bao gồm chữ hoa, chữ thường và số' });
+
+  const db = getDb();
+  const user = db.prepare('SELECT * FROM TAIKHOAN WHERE SDT = ?').get(sdt);
+  if (!user) return res.status(404).json({ message: 'Tài khoản không tồn tại' });
+
+  const hashed = bcrypt.hashSync(matkhau_moi, 10);
+  db.prepare('UPDATE TAIKHOAN SET MATKHAU = ? WHERE SDT = ?').run(hashed, sdt);
+  res.json({ message: 'Đặt lại mật khẩu thành công! Vui lòng đăng nhập lại.' });
 });
 
 module.exports = router;
