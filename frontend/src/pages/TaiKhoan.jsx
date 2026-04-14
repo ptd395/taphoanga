@@ -15,6 +15,7 @@ export default function TaiKhoan() {
   const [pwForm, setPwForm] = useState({ matkhau_cu: '', matkhau_moi: '', xacnhan: '' });
   const [showPw, setShowPw] = useState({ cu: false, moi: false, xn: false });
   const [pwLoading, setPwLoading] = useState(false);
+  const [pwErrors, setPwErrors] = useState({});
 
   useEffect(() => {
     api.get('/taikhoan/me')
@@ -41,14 +42,17 @@ export default function TaiKhoan() {
 
   const handleChangePw = async (e) => {
     e.preventDefault();
-    if (pwForm.matkhau_moi !== pwForm.xacnhan) return toast.error('Mật khẩu xác nhận không khớp');
+    setPwErrors({});
     setPwLoading(true);
     try {
-      await api.put('/taikhoan/me/password', pwForm);
-      toast.success('Đổi mật khẩu thành công');
+      const res = await api.put('/taikhoan/me/password', pwForm);
+      toast.success(res.data.message);
       setPwForm({ matkhau_cu: '', matkhau_moi: '', xacnhan: '' });
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Lỗi đổi mật khẩu');
+      const data = err.response?.data;
+      const msg = data?.message || 'Có lỗi xảy ra, không thể đổi mật khẩu. Vui lòng thử lại.';
+      if (data?.field) setPwErrors({ [data.field]: msg });
+      else setPwErrors({ general: msg });
     } finally {
       setPwLoading(false);
     }
@@ -141,27 +145,33 @@ export default function TaiKhoan() {
               <p style={{ color: '#16a34a', fontWeight: 700, fontSize: 18, marginBottom: 20 }}>Đổi mật khẩu</p>
               <form id="pw-form" onSubmit={handleChangePw}>
                 {[
-                  { key: 'matkhau_cu', label: 'Mật khẩu cũ', showKey: 'cu' },
-                  { key: 'matkhau_moi', label: 'Mật khẩu mới', showKey: 'moi' },
+                  { key: 'matkhau_cu', label: 'Mật khẩu cũ', showKey: 'cu', placeholder: 'Nhập mật khẩu' },
+                  { key: 'matkhau_moi', label: 'Mật khẩu mới', showKey: 'moi', placeholder: 'Nhập mật khẩu' },
                   { key: 'xacnhan', label: 'Xác nhận', showKey: 'xn', placeholder: 'Nhập lại mật khẩu' },
                 ].map(({ key, label, showKey, placeholder }) => (
-                  <div key={key} style={{ display: 'flex', alignItems: 'center', marginBottom: 14 }}>
-                    <span style={{ width: 160, fontWeight: 500, color: '#374151', flexShrink: 0, fontSize: 14 }}>{label}</span>
-                    <div style={{ flex: 1, position: 'relative' }}>
-                      <input
-                        type={showPw[showKey] ? 'text' : 'password'}
-                        className="input-field pr-10"
-                        placeholder={placeholder || 'Nhập mật khẩu'}
-                        value={pwForm[key]}
-                        onChange={e => setPwForm(p => ({ ...p, [key]: e.target.value }))}
-                      />
-                      <button type="button" onClick={() => setShowPw(p => ({ ...p, [showKey]: !p[showKey] }))}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
-                        {showPw[showKey] ? <EyeSlashIcon className="w-4 h-4" /> : <EyeIcon className="w-4 h-4" />}
-                      </button>
+                  <div key={key} style={{ marginBottom: 14 }}>
+                    <div style={{ display: 'flex', alignItems: 'center' }}>
+                      <span style={{ width: 160, fontWeight: 500, color: '#374151', flexShrink: 0, fontSize: 14 }}>{label}</span>
+                      <div style={{ flex: 1, position: 'relative' }}>
+                        <input
+                          type={showPw[showKey] ? 'text' : 'password'}
+                          className="input-field pr-10"
+                          placeholder={placeholder}
+                          value={pwForm[key]}
+                          onChange={e => { setPwForm(p => ({ ...p, [key]: e.target.value })); setPwErrors(p => ({ ...p, [key]: '' })); }}
+                        />
+                        <button type="button" onClick={() => setShowPw(p => ({ ...p, [showKey]: !p[showKey] }))}
+                          className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+                          {showPw[showKey] ? <EyeSlashIcon className="w-4 h-4" /> : <EyeIcon className="w-4 h-4" />}
+                        </button>
+                      </div>
                     </div>
+                    {pwErrors[key] && (
+                      <p style={{ color: '#ef4444', fontSize: 12, marginTop: 4, marginLeft: 160 }}>{pwErrors[key]}</p>
+                    )}
                   </div>
                 ))}
+                {pwErrors.general && <p style={{ color: '#ef4444', fontSize: 13, marginBottom: 8 }}>{pwErrors.general}</p>}
               </form>
             </div>
 

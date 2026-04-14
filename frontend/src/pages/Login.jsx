@@ -21,6 +21,7 @@ export default function Login() {
   const [forgotStep, setForgotStep] = useState(1);
   const [forgotData, setForgotData] = useState({ sdt: '', otp: '', otp_demo: '', matkhau_moi: '', xacnhan: '' });
   const [forgotLoading, setForgotLoading] = useState(false);
+  const [resetErrors, setResetErrors] = useState({});
   const [countdown, setCountdown] = useState(0);
   const countdownRef = useRef(null);
 
@@ -84,7 +85,6 @@ export default function Login() {
     setForgotLoading(true);
     try {
       await api.post('/auth/verify-otp', { sdt: forgotData.sdt, otp: forgotData.otp });
-      // OTP đúng -> chuyển sang step 3 nhập mật khẩu mới
       setForgotStep(3);
     } catch (err) {
       toast.error(err.response?.data?.message || 'Lỗi xác thực OTP');
@@ -95,18 +95,21 @@ export default function Login() {
 
   const handleResetPassword = async (e) => {
     e.preventDefault();
-    if (forgotData.matkhau_moi !== forgotData.xacnhan) return toast.error('Mật khẩu xác nhận không khớp');
+    setResetErrors({});
     setForgotLoading(true);
     try {
-      await api.post('/auth/reset-password', { sdt: forgotData.sdt, matkhau_moi: forgotData.matkhau_moi });
-      toast.success('Đặt lại mật khẩu thành công! Vui lòng đăng nhập lại.');
-      clearInterval(countdownRef.current);
-      setShowForgot(false);
-      setForgotStep(1);
-      setForgotData({ sdt: '', otp: '', otp_demo: '', matkhau_moi: '', xacnhan: '' });
-      setCountdown(0);
+      const res = await api.post('/auth/reset-password', {
+        sdt: forgotData.sdt,
+        matkhau_moi: forgotData.matkhau_moi,
+        xacnhan: forgotData.xacnhan
+      });
+      toast.success(res.data.message);
+      closeForgot();
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Lỗi đặt lại mật khẩu');
+      const data = err.response?.data;
+      const msg = data?.message || 'Có lỗi xảy ra. Vui lòng thử lại.';
+      if (data?.field) setResetErrors({ [data.field]: msg });
+      else setResetErrors({ general: msg });
     } finally {
       setForgotLoading(false);
     }
@@ -118,6 +121,7 @@ export default function Login() {
     setForgotStep(1);
     setForgotData({ sdt: '', otp: '', otp_demo: '', matkhau_moi: '', xacnhan: '' });
     setCountdown(0);
+    setResetErrors({});
   };
 
   return (
@@ -137,21 +141,16 @@ export default function Login() {
       {/* Main card */}
       <div className="relative z-10 bg-white rounded-3xl shadow-xl flex overflow-hidden"
         style={{ width: 960, minHeight: 500 }}>
-
-        {/* Left image */}
         <div className="flex items-center justify-center rounded-2xl m-5 overflow-hidden"
           style={{ background: '#f5c8c8', width: 400, minHeight: 440, flexShrink: 0 }}>
           <img src="/cart.png" alt="shopping cart"
             style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
         </div>
-
-        {/* Right form */}
         <div className="flex flex-col justify-center px-10 py-10 flex-1">
           <h1 className="mb-6" style={{
             fontFamily: "'Caveat', cursive", fontSize: 52,
             fontWeight: 700, color: '#1a1a1a', letterSpacing: 1
           }}>Welcome!</h1>
-
           <form onSubmit={handleLogin} className="space-y-4">
             <input type="text" placeholder="Tên đăng nhập"
               value={form.tendn}
@@ -165,7 +164,6 @@ export default function Login() {
               className="w-full px-4 py-3 rounded-xl border border-gray-200 outline-none text-gray-700 placeholder-gray-400 focus:border-green-400 transition"
               style={{ fontSize: 15 }} />
             {errorMsg && <p className="text-red-500 text-sm">{errorMsg}</p>}
-
             <div className="flex items-center justify-between">
               <button type="button" onClick={() => setShowForgot(true)}
                 className="text-sm text-red-500 hover:text-red-700">
@@ -189,10 +187,8 @@ export default function Login() {
 
       {/* Forgot modal */}
       {showForgot && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40"
-          onClick={closeForgot}>
-          <div className="bg-white rounded-2xl shadow-xl p-6 w-full max-w-sm"
-            onClick={e => e.stopPropagation()}>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={closeForgot}>
+          <div className="bg-white rounded-2xl shadow-xl p-6 w-full max-w-sm" onClick={e => e.stopPropagation()}>
             <h3 className="text-lg font-bold text-gray-800 mb-4">
               {forgotStep === 1 ? 'Quên mật khẩu' : forgotStep === 2 ? 'Xác thực OTP' : 'Đặt mật khẩu mới'}
             </h3>
@@ -255,14 +251,17 @@ export default function Login() {
                   <label className="block text-sm font-medium text-gray-700 mb-1">Mật khẩu mới</label>
                   <input type="password" className="input-field" placeholder="Nhập mật khẩu mới"
                     value={forgotData.matkhau_moi}
-                    onChange={e => setForgotData(d => ({ ...d, matkhau_moi: e.target.value }))} />
+                    onChange={e => { setForgotData(d => ({ ...d, matkhau_moi: e.target.value })); setResetErrors(p => ({ ...p, matkhau_moi: '' })); }} />
+                  {resetErrors.matkhau_moi && <p className="text-red-500 text-xs mt-1">{resetErrors.matkhau_moi}</p>}
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Nhập lại mật khẩu</label>
                   <input type="password" className="input-field" placeholder="Nhập lại mật khẩu mới"
                     value={forgotData.xacnhan}
-                    onChange={e => setForgotData(d => ({ ...d, xacnhan: e.target.value }))} />
+                    onChange={e => { setForgotData(d => ({ ...d, xacnhan: e.target.value })); setResetErrors(p => ({ ...p, xacnhan: '' })); }} />
+                  {resetErrors.xacnhan && <p className="text-red-500 text-xs mt-1">{resetErrors.xacnhan}</p>}
                 </div>
+                {resetErrors.general && <p className="text-red-500 text-sm">{resetErrors.general}</p>}
                 <div className="flex gap-3">
                   <button type="button" onClick={() => setForgotStep(2)}
                     className="btn-secondary flex-1 justify-center">Quay lại</button>
