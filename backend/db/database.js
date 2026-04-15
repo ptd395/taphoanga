@@ -65,12 +65,13 @@ function initSchema() {
 
 function generateMASP() {
   const d = getDb();
-  while (true) {
-    const num = Math.floor(Math.random() * 100000000).toString().padStart(8, '0');
-    const id = 'SP' + num;
-    const exists = d.prepare('SELECT MASP FROM HANGHOA WHERE MASP = ?').get(id);
-    if (!exists) return id;
-  }
+  // Lấy số thứ tự lớn nhất từ mã sản phẩm (Bỏ 2 ký tự 'SP' đầu và chuyển phần còn lại thành số)
+  const row = d.prepare("SELECT CAST(SUBSTR(MASP, 3) AS INTEGER) AS num FROM HANGHOA ORDER BY num DESC LIMIT 1").get();
+  
+  const maxNum = (row && row.num) ? row.num : 0;
+  const nextNum = maxNum + 1;
+  
+  return 'SP' + nextNum.toString().padStart(8, '0');
 }
 
 function generateMAHDB() {

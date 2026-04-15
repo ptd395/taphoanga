@@ -60,8 +60,26 @@ router.get('/:masp', auth, (req, res) => {
 // POST /api/hanghoa
 router.post('/', auth, upload.single('hinhanh'), (req, res) => {
   const db = getDb();
-  const { TENSP, DVT, GIABAN, GIANHAP, SL_TON, DMUC_TON_MIN, TRANGTHAI_SP } = req.body;
+  let { TENSP, DVT, GIABAN, GIANHAP, SL_TON, DMUC_TON_MIN, TRANGTHAI_SP } = req.body;
+  
   if (!TENSP) return res.status(400).json({ message: 'Tên sản phẩm không được để trống' });
+  
+  // Rule 1: Tên hàng hóa không được trùng với hàng đang còn hiệu lực
+  const existingActive = db.prepare(`SELECT MASP FROM HANGHOA WHERE LOWER(TENSP) = LOWER(?) AND TRANGTHAI_SP = 'Đang bán'`).get(TENSP);
+  if (existingActive) return res.status(400).json({ message: 'Hàng hóa đã tồn tại' });
+
+  // Parse numbers
+  GIANHAP = parseFloat(GIANHAP) || 0;
+  SL_TON = parseInt(SL_TON) || 0;
+  DMUC_TON_MIN = parseInt(DMUC_TON_MIN) || 0;
+
+  // Rule 2, 3, 4: Validate inputs
+  if (GIANHAP <= 0) return res.status(400).json({ message: 'Giá vốn phải là số dương' });
+  if (SL_TON < 0) return res.status(400).json({ message: 'Tồn kho phải là số không âm' });
+  if (DMUC_TON_MIN < 0) return res.status(400).json({ message: 'Định mức tồn kho tối thiểu phải là số không âm' });
+
+  // Rule 5: Tự động tính giá bán = giá vốn * 1.3
+  GIABAN = GIANHAP * 1.3;
 
   const MASP = generateMASP();
   const HINHANH = req.file ? `/uploads/${req.file.filename}` : null;
@@ -69,8 +87,7 @@ router.post('/', auth, upload.single('hinhanh'), (req, res) => {
   db.prepare(`
     INSERT INTO HANGHOA (MASP, TENSP, DVT, GIABAN, GIANHAP, SL_TON, DMUC_TON_MIN, TRANGTHAI_SP, HINHANH)
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-  `).run(MASP, TENSP, DVT || 'Cái', parseFloat(GIABAN) || 0, parseFloat(GIANHAP) || 0,
-    parseInt(SL_TON) || 0, parseInt(DMUC_TON_MIN) || 0, TRANGTHAI_SP || 'Đang bán', HINHANH);
+  `).run(MASP, TENSP, DVT || 'Cái', GIABAN, GIANHAP, SL_TON, DMUC_TON_MIN, TRANGTHAI_SP || 'Đang bán', HINHANH);
 
   const created = db.prepare('SELECT * FROM HANGHOA WHERE MASP = ?').get(MASP);
   res.status(201).json(created);
@@ -108,10 +125,10 @@ router.put('/:masp', auth, upload.single('hinhanh'), (req, res) => {
 router.delete('/:masp', auth, (req, res) => {
   const db = getDb();
   const existing = db.prepare('SELECT * FROM HANGHOA WHERE MASP = ?').get(req.params.masp);
-  if (!existing) return res.status(404).json({ message: 'Không tìm thấy hàng hóa' });
+  if (!existing) return res.status(404).json({ message: 'Không tìm thấy hàng hóa phù hợp' });
 
-  db.prepare(`UPDATE HANGHOA SET TRANGTHAI_SP = 'Ngừng bán', SL_TON = 0 WHERE MASP = ?`).run(req.params.masp);
-  res.json({ message: 'Đã ngừng kinh doanh sản phẩm' });
+  db.prepare(`UPDATE HANGHOA SET TRANGTHAI_SP = 'Ngừng kinh doanh', SL_TON = 0 WHERE MASP = ?`).run(req.params.masp);
+  res.json({ message: 'Xóa thành công' });
 });
 
 // GET /api/hanghoa/:masp/tonkho
