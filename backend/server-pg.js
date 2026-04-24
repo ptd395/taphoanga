@@ -50,10 +50,10 @@ let dbReady = false;
 
 // Routes - Using PostgreSQL versions
 app.use('/api/auth', require('./routes/auth-pg'));
-app.use('/api/hanghoa', require('./routes/hanghoa'));
-app.use('/api/hoadonban', require('./routes/hoadonban'));
-app.use('/api/baocao', require('./routes/baocao'));
-app.use('/api/taikhoan', require('./routes/taikhoan'));
+app.use('/api/hanghoa', require('./routes/hanghoa-pg'));
+app.use('/api/hoadonban', require('./routes/hoadonban-pg'));
+app.use('/api/baocao', require('./routes/baocao-pg'));
+app.use('/api/taikhoan', require('./routes/taikhoan-pg'));
 
 // Health check
 app.get('/api/health', (req, res) => res.json({ 
