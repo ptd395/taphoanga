@@ -1,33 +1,20 @@
+require('dotenv').config();
 const bcrypt = require('bcryptjs');
-const { getPool, transaction } = require('./database-pg');
+const { Pool } = require('pg');
 
-// Load .env if running directly
-if (require.main === module) {
-  require('dotenv').config();
-}
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  ssl: { rejectUnauthorized: false }
+});
 
-async function seed() {
-  const pool = getPool();
+async function seedQuick() {
+  const client = await pool.connect();
   
-  // Check if already seeded
-  const existing = await pool.query('SELECT COUNT(*) as cnt FROM TAIKHOAN');
-  if (parseInt(existing.rows[0].cnt) > 0) {
-    console.log('Database already seeded.');
-    return;
-  }
-
-  console.log('Seeding PostgreSQL database...');
-  const adminId = 'TK00000001';
-  const hashedPw = bcrypt.hashSync('Admin123', 10);
-
-  await transaction(async (client) => {
-    // Insert admin account
-    await client.query(
-      `INSERT INTO TAIKHOAN (MATK, TENDN, MATKHAU, SDT, TENHT) VALUES ($1, $2, $3, $4, $5)`,
-      [adminId, 'admin', hashedPw, '0987654321', 'Chủ Tiệm Nga']
-    );
-
-    // Insert products
+  try {
+    await client.query('BEGIN');
+    
+    console.log('🔄 Seeding products...');
+    
     const products = [
       { MASP:'SP00000001', TENSP:'Bánh mì Staff chà bông 55g',     DVT:'Gói',  GIABAN:20000, GIANHAP:14000, SL_TON:85,  DMUC_TON_MIN:20 },
       { MASP:'SP00000002', TENSP:'Nước Ngọt Coca Cola 330ml',       DVT:'Lon',  GIABAN:12000, GIANHAP:9000,  SL_TON:120, DMUC_TON_MIN:20 },
@@ -54,12 +41,17 @@ async function seed() {
     for (const p of products) {
       await client.query(
         `INSERT INTO HANGHOA (MASP, TENSP, DVT, GIABAN, GIANHAP, SL_TON, DMUC_TON_MIN, TRANGTHAI_SP) 
-         VALUES ($1, $2, $3, $4, $5, $6, $7, 'Đang bán')`,
+         VALUES ($1, $2, $3, $4, $5, $6, $7, 'Đang bán')
+         ON CONFLICT (MASP) DO NOTHING`,
         [p.MASP, p.TENSP, p.DVT, p.GIABAN, p.GIANHAP, p.SL_TON, p.DMUC_TON_MIN]
       );
     }
-
-    // Generate invoices for full year 2026
+    
+    console.log('✅ Seeded 20 products');
+    
+    console.log('🔄 Seeding invoices (100 invoices for testing)...');
+    
+    const adminId = 'TK00000001';
     const ri = (a, b) => Math.floor(Math.random() * (b - a + 1)) + a;
     const pick = (arr) => arr[ri(0, arr.length - 1)];
     const spList = products.map(p => ({ MASP: p.MASP, GIABAN: p.GIABAN }));
@@ -67,14 +59,14 @@ async function seed() {
     const statusList = ['Hoàn thành','Hoàn thành','Hoàn thành','Hoàn thành','Đã hủy'];
 
     let hdbNum = 1;
-    const startDate = new Date('2026-01-01');
-    const endDate = new Date('2026-12-31');
+    
+    // Chỉ tạo 100 invoices cho nhanh (thay vì 3000+)
+    const startDate = new Date('2026-04-01');
+    const endDate = new Date('2026-04-24');
 
     for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) {
       const dateStr = d.toISOString().split('T')[0];
-      const dow = d.getDay();
-      const isWeekend = dow === 0 || dow === 6;
-      const numInvoices = isWeekend ? ri(8, 15) : ri(5, 10);
+      const numInvoices = ri(3, 6); // 3-6 invoices per day
 
       for (let k = 0; k < numInvoices; k++) {
         const mahdb = 'HDB' + String(hdbNum).padStart(7, '0');
@@ -112,21 +104,25 @@ async function seed() {
       }
     }
 
-    console.log(`✅ Seeded ${hdbNum - 1} invoices across full year 2026.`);
-  });
-
-  console.log('✅ Seeding complete!');
+    console.log(`✅ Seeded ${hdbNum - 1} invoices`);
+    
+    await client.query('COMMIT');
+    console.log('✅ Seeding complete!');
+    
+  } catch (error) {
+    await client.query('ROLLBACK');
+    console.error('❌ Error:', error.message);
+    throw error;
+  } finally {
+    client.release();
+    await pool.end();
+  }
 }
 
-module.exports = { seed };
-
-// Run seed if called directly
-if (require.main === module) {
-  seed().then(() => {
-    console.log('✅ Seed completed successfully!');
-    process.exit(0);
-  }).catch((error) => {
-    console.error('❌ Seed failed:', error);
-    process.exit(1);
-  });
-}
+seedQuick().then(() => {
+  console.log('✅ Done!');
+  process.exit(0);
+}).catch((error) => {
+  console.error('❌ Failed:', error);
+  process.exit(1);
+});

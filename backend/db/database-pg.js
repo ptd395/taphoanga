@@ -13,7 +13,12 @@ function getPool() {
 
     pool = new Pool({
       connectionString,
-      ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
+      ssl: {
+        rejectUnauthorized: false
+      },
+      connectionTimeoutMillis: 10000,
+      idleTimeoutMillis: 30000,
+      max: 10
     });
 
     console.log('✅ PostgreSQL connection pool created');

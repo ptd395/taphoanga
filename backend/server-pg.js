@@ -24,6 +24,8 @@ app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 const { getPool, initSchema } = require('./db/database-pg');
 const { seed } = require('./db/seed-pg');
 
+let dbReady = false;
+
 (async () => {
   try {
     console.log('🔄 Initializing PostgreSQL connection...');
@@ -36,9 +38,11 @@ const { seed } = require('./db/seed-pg');
     await seed();
     
     console.log('✅ Database ready!');
+    dbReady = true;
   } catch (e) {
     console.error('❌ Database initialization failed:', e.message);
-    process.exit(1);
+    console.error('📋 Full error:', e);
+    // Don't exit, let server run for debugging
   }
 })();
 
@@ -53,6 +57,7 @@ app.use('/api/taikhoan', require('./routes/taikhoan'));
 app.get('/api/health', (req, res) => res.json({ 
   status: 'ok', 
   database: 'PostgreSQL',
+  dbReady: dbReady,
   time: new Date().toISOString() 
 }));
 
