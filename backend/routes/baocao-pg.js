@@ -18,7 +18,7 @@ router.get('/doanhthu', auth, async (req, res) => {
 
     const result = await pool.query(`
       SELECT
-        DATE(ngayban) as thoigian,
+        TO_CHAR(DATE(ngayban), 'YYYY-MM-DD') as thoigian,
         SUM(CASE WHEN trangthai_hdb = 'Hoàn thành' THEN tongtienhang_ban ELSE 0 END) as doanhthu,
         SUM(CASE WHEN trangthai_hdb = 'Đã hủy' THEN tongtienhang_ban ELSE 0 END) as giatri_tra,
         COUNT(CASE WHEN trangthai_hdb = 'Hoàn thành' THEN 1 END) as so_don
@@ -29,7 +29,7 @@ router.get('/doanhthu', auth, async (req, res) => {
     `, [tungay, denngay]);
 
     const rows = result.rows.map(r => ({
-      ...r,
+      thoigian: r.thoigian,
       doanhthu: parseFloat(r.doanhthu) || 0,
       giatri_tra: parseFloat(r.giatri_tra) || 0,
       so_don: parseInt(r.so_don) || 0,
@@ -86,7 +86,9 @@ router.get('/hanghoa', auth, async (req, res) => {
     `, [tungay, denngay, searchParam, searchParam]);
 
     const rows = result.rows.map(r => ({
-      ...r,
+      masp: r.masp,
+      tensp: r.tensp,
+      dvt: r.dvt,
       sl_ban: parseInt(r.sl_ban) || 0,
       doanhthu: parseFloat(r.doanhthu) || 0,
       sl_tra: parseInt(r.sl_tra) || 0,
@@ -118,7 +120,7 @@ router.get('/doanhthu/detail', auth, async (req, res) => {
     if (!ngay) return res.json({ rows: [] });
     
     const result = await pool.query(`
-      SELECT mahdb, tongtienhang_ban as doanhthu, trangthai_hdb
+      SELECT mahdb, tongtienhang_ban as doanhthu, trangthai_hdb, TO_CHAR(ngayban, 'YYYY-MM-DD HH24:MI:SS') as ngayban
       FROM hoadonban
       WHERE DATE(ngayban) = $1
       ORDER BY ngayban ASC
@@ -139,7 +141,7 @@ router.get('/hanghoa/detail', auth, async (req, res) => {
     if (!masp) return res.json({ rows: [] });
     
     const result = await pool.query(`
-      SELECT ct.mahdb, ct.soluong, ct.soluong * ct.giaban as doanhthu, h.trangthai_hdb
+      SELECT ct.mahdb, ct.soluong, ct.soluong * ct.giaban as doanhthu, h.trangthai_hdb, TO_CHAR(h.ngayban, 'YYYY-MM-DD HH24:MI:SS') as ngayban
       FROM ct_hoadonban ct
       JOIN hoadonban h ON ct.mahdb = h.mahdb
       WHERE ct.masp = $1
