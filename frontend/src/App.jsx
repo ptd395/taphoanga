@@ -22,14 +22,19 @@ export default function App() {
   return (
     <Routes>
       <Route path="/login" element={user ? <Navigate to="/" replace /> : <Login />} />
+      
+      {/* Trang Bán hàng - Toàn màn hình (không có Layout) */}
+      <Route path="/ban-hang" element={<ProtectedRoute><BanHang /></ProtectedRoute>} />
+      
+      {/* Các trang khác - Có Layout */}
       <Route path="/" element={<ProtectedRoute><Layout /></ProtectedRoute>}>
         <Route index element={<Dashboard />} />
         <Route path="hang-hoa" element={<HangHoa />} />
-        <Route path="ban-hang" element={<BanHang />} />
         <Route path="hoa-don" element={<HoaDonBan />} />
         <Route path="bao-cao" element={<BaoCao />} />
         <Route path="tai-khoan" element={<TaiKhoan />} />
       </Route>
+      
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );

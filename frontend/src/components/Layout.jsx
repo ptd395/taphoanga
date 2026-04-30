@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
-import { Outlet, NavLink, useNavigate } from 'react-router-dom';
+import { Outlet, NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { ShoppingCartIcon, BellIcon, UserCircleIcon, ArrowRightOnRectangleIcon } from '@heroicons/react/24/outline';
+import { ShoppingCartIcon, BellIcon, UserCircleIcon, ArrowRightOnRectangleIcon, XMarkIcon, ExclamationTriangleIcon } from '@heroicons/react/24/outline';
 
 const navItems = [
   { to: '/', label: 'Tổng quan', end: true },
   { to: '/hang-hoa', label: 'Hàng hóa' },
-  { to: '/hoa-don', label: 'Bán hàng' },
+  { to: '/hoa-don', label: 'Hóa đơn' },
   { to: '/bao-cao', label: 'Báo cáo' },
   { to: '/tai-khoan', label: 'Tài khoản' },
 ];
@@ -14,8 +14,10 @@ const navItems = [
 export default function Layout() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showBell, setShowBell] = useState(false);
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-100">
@@ -55,7 +57,7 @@ export default function Layout() {
                   className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2">
                   <UserCircleIcon className="w-4 h-4" /> Tài khoản
                 </button>
-                <button onClick={() => { logout(); navigate('/login'); }}
+                <button onClick={() => { setShowLogoutConfirm(true); setShowUserMenu(false); }}
                   className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center gap-2">
                   <ArrowRightOnRectangleIcon className="w-4 h-4" /> Đăng xuất
                 </button>
@@ -97,6 +99,60 @@ export default function Layout() {
       {/* Overlay to close menus */}
       {(showUserMenu || showBell) && (
         <div className="fixed inset-0 z-40" onClick={() => { setShowUserMenu(false); setShowBell(false); }} />
+      )}
+
+      {/* Logout Confirmation Modal */}
+      {showLogoutConfirm && (
+        <div className="fixed inset-0 z-[100] bg-black/50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden">
+            {/* Header */}
+            <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
+              <h3 className="text-lg font-bold text-gray-900">Xác nhận đăng xuất</h3>
+              <button 
+                onClick={() => setShowLogoutConfirm(false)}
+                className="text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                <XMarkIcon className="w-6 h-6" />
+              </button>
+            </div>
+
+            {/* Body */}
+            <div className="px-6 py-6">
+              {location.pathname === '/ban-hang' && (
+                <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg flex items-start gap-3">
+                  <ExclamationTriangleIcon className="w-6 h-6 text-red-600 shrink-0 mt-0.5" />
+                  <div>
+                    <p className="text-sm font-semibold text-red-800">Bạn có dữ liệu chưa được lưu!</p>
+                    <p className="text-xs text-red-600 mt-1">Các hóa đơn đang nhập sẽ bị mất nếu đăng xuất.</p>
+                  </div>
+                </div>
+              )}
+              <p className="text-base text-gray-700">
+                Bạn có chắc chắn muốn đăng xuất không?
+              </p>
+            </div>
+
+            {/* Footer */}
+            <div className="px-6 py-4 bg-gray-50 flex items-center justify-end gap-3">
+              <button
+                onClick={() => setShowLogoutConfirm(false)}
+                className="px-5 py-2.5 rounded-lg border border-gray-300 text-gray-700 font-medium hover:bg-gray-100 transition-colors"
+              >
+                Hủy
+              </button>
+              <button
+                onClick={() => {
+                  setShowLogoutConfirm(false);
+                  logout();
+                  navigate('/login');
+                }}
+                className="px-5 py-2.5 rounded-lg bg-red-600 text-white font-medium hover:bg-red-700 transition-colors"
+              >
+                Đăng xuất
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

@@ -230,14 +230,14 @@ function ExpandedInvoice({ invoice, onCancelled }) {
 
   const saveNote = async () => {
     setSaving(true);
-    try { await api.put(`/hoadonban/${invoice.MAHDB}/ghichu`, { ghichu }); toast.success('Đã lưu ghi chú'); }
+    try { await api.patch(`/hoadonban/${invoice.MAHDB}/ghichu`, { ghichu }); toast.success('Đã lưu ghi chú'); }
     catch { toast.error('Lỗi lưu ghi chú'); } finally { setSaving(false); }
   };
 
   const cancelInvoice = async () => {
     setCancelling(true);
     try {
-      await api.put(`/hoadonban/${invoice.MAHDB}/huy`);
+      await api.patch(`/hoadonban/${invoice.MAHDB}/huy`);
       toast.success('Đã hủy hóa đơn'); setShowCancel(false); onCancelled();
     } catch (err) { toast.error(err.response?.data?.message || 'Lỗi hủy hóa đơn'); }
     finally { setCancelling(false); }
@@ -523,7 +523,7 @@ export default function HoaDonBan() {
               <MagnifyingGlassIcon className="w-4 h-4 text-gray-400 shrink-0" />
               <input
                 className="flex-1 text-sm focus:outline-none bg-transparent placeholder-gray-400"
-                placeholder="Tìm kiếm theo mã hóa đơn"
+                placeholder="Tìm kiếm theo mã hóa đơn, tên hàng, mã hàng"
                 value={search}
                 onChange={e => setSearch(e.target.value)}
                 onKeyDown={e => { if (e.key === 'Enter') { setPage(1); setShowFilterBox(false); } }}
@@ -537,7 +537,7 @@ export default function HoaDonBan() {
               <div className="absolute left-0 right-0 top-full mt-1 z-40 bg-white border border-gray-200 rounded-xl shadow-lg p-4">
                 <input
                   className="w-full border border-gray-200 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-green-400 mb-3"
-                  placeholder="Theo mã, tên hàng"
+                  placeholder="Theo mã hóa đơn, tên hàng, mã hàng"
                   value={search}
                   onChange={e => setSearch(e.target.value)}
                   autoFocus
