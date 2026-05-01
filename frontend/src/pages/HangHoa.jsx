@@ -536,21 +536,31 @@ export default function HangHoa() {
                                       ) : stockHistory.length === 0 ? (
                                         <tr><td colSpan={7} className="text-center py-8 text-gray-400">Chưa có giao dịch phát sinh</td></tr>
                                       ) : (
-                                        stockHistory.map((h, i) => (
-                                          <tr key={h.MAHDB} className="hover:bg-gray-50">
-                                            <td className="py-2.5 px-4 border-b text-blue-600 font-medium">{h.MAHDB}</td>
-                                            <td className="py-2.5 px-4 border-b text-gray-600">{fmtDate(h.NGAYBAN)}</td>
-                                            <td className="py-2.5 px-4 border-b">
-                                              <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${h.TRANGTHAI_HDB === 'Hoàn thành' ? 'bg-blue-50 text-blue-600' : 'bg-red-50 text-red-600'}`}>
-                                                {h.TRANGTHAI_HDB === 'Hoàn thành' ? 'Bán hàng' : 'Hủy đơn'}
-                                              </span>
-                                            </td>
-                                            <td className="py-2.5 px-4 border-b text-right text-gray-700">{h.GIABAN?.toLocaleString()}</td>
-                                            <td className="py-2.5 px-4 border-b text-right text-gray-700">{item.GIANHAP?.toLocaleString()}</td>
-                                            <td className="py-2.5 px-4 border-b text-center text-gray-700">-{h.SOLUONG}</td>
-                                            <td className="py-2.5 px-4 border-b text-center font-bold text-gray-800 italic">--</td>
-                                          </tr>
-                                        ))
+                                        (() => {
+                                          let runningStock = item.SL_TON;
+                                          return [...stockHistory].reverse().map((h, i) => {
+                                            const change = h.TRANGTHAI_HDB === 'Hoàn thành' ? -h.SOLUONG : h.SOLUONG;
+                                            const stockBefore = runningStock;
+                                            runningStock -= change;
+                                            return (
+                                              <tr key={h.MAHDB} className="hover:bg-gray-50">
+                                                <td className="py-2.5 px-4 border-b text-blue-600 font-medium">{h.MAHDB}</td>
+                                                <td className="py-2.5 px-4 border-b text-gray-600">{fmtDate(h.NGAYBAN)}</td>
+                                                <td className="py-2.5 px-4 border-b">
+                                                  <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${h.TRANGTHAI_HDB === 'Hoàn thành' ? 'bg-blue-50 text-blue-600' : 'bg-red-50 text-red-600'}`}>
+                                                    {h.TRANGTHAI_HDB === 'Hoàn thành' ? 'Bán hàng' : 'Hủy đơn'}
+                                                  </span>
+                                                </td>
+                                                <td className="py-2.5 px-4 border-b text-right text-gray-700">{h.GIABAN?.toLocaleString()}</td>
+                                                <td className="py-2.5 px-4 border-b text-right text-gray-700">{item.GIANHAP?.toLocaleString()}</td>
+                                                <td className="py-2.5 px-4 border-b text-center text-gray-700">
+                                                  {h.TRANGTHAI_HDB === 'Hoàn thành' ? `-${h.SOLUONG}` : `+${h.SOLUONG}`}
+                                                </td>
+                                                <td className="py-2.5 px-4 border-b text-center font-bold text-gray-800">{stockBefore}</td>
+                                              </tr>
+                                            );
+                                          }).reverse();
+                                        })()
                                       )}
                                     </tbody>
                                   </table>
