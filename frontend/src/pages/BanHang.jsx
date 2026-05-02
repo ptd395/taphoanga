@@ -216,7 +216,7 @@ export default function BanHang() {
           const exact = await api.get(`/hanghoa/${keyword.toUpperCase()}`);
           const p = exact.data;
           if (p?.TRANGTHAI_SP === 'Đang bán') merged = [p];
-        } catch {}
+        } catch { }
       }
 
       // Final fallback: fetch active products and filter client-side (supports no-diacritic name search)
@@ -237,13 +237,13 @@ export default function BanHang() {
               );
             })
             .slice(0, 8);
-        } catch {}
+        } catch { }
       }
 
       // Avoid out-of-order responses when typing quickly
       if (requestId === searchRequestIdRef.current) {
         setSearchResults(merged);
-        if (merged.length === 0) setSearchError('Không tìm thấy hàng hóa phù hợp');
+        if (merged.length === 0) setSearchError('Không tìm thấy hàng hóa');
       }
     } catch {
       setSearchResults([]);
@@ -266,9 +266,9 @@ export default function BanHang() {
     updateTab(activeTab, (tab) => {
       const existing = tab.items.find(i => i.MASP === product.MASP);
       if (existing) {
-        return { items: tab.items.map(i => i.MASP === product.MASP ? { ...i, SOLUONG: i.SOLUONG + 1 } : i) };
+        return { items: tab.items.map(i => i.MASP === product.MASP ? { ...i, SOLUONG: i.SOLUONG + 1, SL_TON: product.SL_TON, DMUC_TON_MIN: product.DMUC_TON_MIN } : i) };
       }
-      return { items: [...tab.items, { MASP: product.MASP, TENSP: product.TENSP, DVT: product.DVT, GIABAN: product.GIABAN, SOLUONG: 1 }] };
+      return { items: [...tab.items, { MASP: product.MASP, TENSP: product.TENSP, DVT: product.DVT, GIABAN: product.GIABAN, SOLUONG: 1, SL_TON: product.SL_TON, DMUC_TON_MIN: product.DMUC_TON_MIN }] };
     });
     setSearchQ('');
     setSearchResults([]);
@@ -285,12 +285,12 @@ export default function BanHang() {
       toast.error('Chưa có sản phẩm trong hóa đơn');
       return;
     }
-    
+
     // Nếu khách không nhập gì, mặc định là trả đúng số tiền cần trả
-    const khachDuaTien = currentTab?.khachTT && currentTab.khachTT.trim() !== '' 
-      ? Number(currentTab.khachTT) 
+    const khachDuaTien = currentTab?.khachTT && currentTab.khachTT.trim() !== ''
+      ? Number(currentTab.khachTT)
       : total;
-    
+
     if (khachDuaTien < total) {
       toast.error('Khách thanh toán chưa đủ');
       return;
@@ -304,6 +304,18 @@ export default function BanHang() {
         pttt: currentTab.pttt,
       });
       toast.success('Thanh toán thành công');
+
+      // Cảnh báo tồn kho dưới định mức
+      currentItems.forEach(item => {
+        const remaining = (item.SL_TON || 0) - item.SOLUONG;
+        const minStock = item.DMUC_TON_MIN || 0;
+        if (remaining < minStock) {
+          toast.error(`Cảnh báo ${item.TENSP} tồn kho dưới định mức tồn`, {
+            duration: 5000,
+          });
+        }
+      });
+
       setShowInvoice({
         ...res.data,
         items: currentItems,
@@ -311,8 +323,9 @@ export default function BanHang() {
         tienTraKhach: khachDuaTien - total,
       });
       updateTab(activeTab, () => ({ items: [], khachTT: '' }));
+      loadCatalog();
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Lỗi tạo hóa đơn');
+      toast.error('Lưu hóa đơn thất bại');
     } finally {
       setPaying(false);
     }
@@ -320,8 +333,8 @@ export default function BanHang() {
 
   const total = currentTab?.items.reduce((s, i) => s + i.SOLUONG * i.GIABAN, 0) || 0;
   const totalQty = currentTab?.items.reduce((s, i) => s + i.SOLUONG, 0) || 0;
-  const khachThanhToan = currentTab?.khachTT && currentTab.khachTT.trim() !== '' 
-    ? Number(currentTab.khachTT) 
+  const khachThanhToan = currentTab?.khachTT && currentTab.khachTT.trim() !== ''
+    ? Number(currentTab.khachTT)
     : 0;
   const tienTraKhach = Math.max(0, khachThanhToan - total);
 
@@ -372,7 +385,7 @@ export default function BanHang() {
         </div>
 
         <svg width="25" height="25" viewBox="0 0 25 25" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path d="M1 6V3.5C1 2.83696 1.26339 2.20107 1.73223 1.73223C2.20107 1.26339 2.83696 1 3.5 1H6M18.5 1H21C21.663 1 22.2989 1.26339 22.7678 1.73223C23.2366 2.20107 23.5 2.83696 23.5 3.5V6M23.5 18.5V21C23.5 21.663 23.2366 22.2989 22.7678 22.7678C22.2989 23.2366 21.663 23.5 21 23.5H18.5M6 23.5H3.5C2.83696 23.5 2.20107 23.2366 1.73223 22.7678C1.26339 22.2989 1 21.663 1 21V18.5M6 12.25H18.5" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+          <path d="M1 6V3.5C1 2.83696 1.26339 2.20107 1.73223 1.73223C2.20107 1.26339 2.83696 1 3.5 1H6M18.5 1H21C21.663 1 22.2989 1.26339 22.7678 1.73223C23.2366 2.20107 23.5 2.83696 23.5 3.5V6M23.5 18.5V21C23.5 21.663 23.2366 22.2989 22.7678 22.7678C22.2989 23.2366 21.663 23.5 21 23.5H18.5M6 23.5H3.5C2.83696 23.5 2.20107 23.2366 1.73223 22.7678C1.26339 22.2989 1 21.663 1 21V18.5M6 12.25H18.5" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
         </svg>
 
         <div className="flex items-center gap-1">
@@ -380,9 +393,8 @@ export default function BanHang() {
             <div
               key={`${tab.id}-${idx}`}
               onClick={() => setActiveTab(tab.id)}
-              className={`h-9 px-4 rounded-t-md text-sm flex items-center gap-2 cursor-pointer ${
-                activeTab === tab.id ? 'bg-white text-gray-800 font-semibold' : 'bg-[#02a357] text-white'
-              }`}
+              className={`h-9 px-4 rounded-t-md text-sm flex items-center gap-2 cursor-pointer ${activeTab === tab.id ? 'bg-white text-gray-800 font-semibold' : 'bg-[#02a357] text-white'
+                }`}
             >
               {`Hóa đơn ${idx + 1}`}
               <XMarkIcon
@@ -415,10 +427,10 @@ export default function BanHang() {
                 className="w-full text-left px-4 py-2 text-gray-800 hover:bg-gray-50 flex items-center gap-2"
               >
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M20 2H4C2.89543 2 2 2.89543 2 4V8C2 9.10457 2.89543 10 4 10H20C21.1046 10 22 9.10457 22 8V4C22 2.89543 21.1046 2 20 2Z" stroke="black" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                  <path d="M20 14H4C2.89543 14 2 14.8954 2 16V20C2 21.1046 2.89543 22 4 22H20C21.1046 22 22 21.1046 22 20V16C22 14.8954 21.1046 14 20 14Z" stroke="black" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                  <path d="M6 6H6.01" stroke="black" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                  <path d="M6 18H6.01" stroke="black" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  <path d="M20 2H4C2.89543 2 2 2.89543 2 4V8C2 9.10457 2.89543 10 4 10H20C21.1046 10 22 9.10457 22 8V4C22 2.89543 21.1046 2 20 2Z" stroke="black" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                  <path d="M20 14H4C2.89543 14 2 14.8954 2 16V20C2 21.1046 2.89543 22 4 22H20C21.1046 22 22 21.1046 22 20V16C22 14.8954 21.1046 14 20 14Z" stroke="black" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                  <path d="M6 6H6.01" stroke="black" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                  <path d="M6 18H6.01" stroke="black" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                 </svg>
                 <span>Quản lý</span>
               </button>
@@ -431,7 +443,7 @@ export default function BanHang() {
                 className="w-full text-left px-4 py-2 text-red-600 hover:bg-red-50 flex items-center gap-2"
               >
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M5 21C4.45 21 3.97933 20.8043 3.588 20.413C3.19667 20.0217 3.00067 19.5507 3 19V5C3 4.45 3.196 3.97933 3.588 3.588C3.98 3.19667 4.45067 3.00067 5 3H11C11.2833 3 11.521 3.096 11.713 3.288C11.905 3.48 12.0007 3.71733 12 4C11.9993 4.28267 11.9033 4.52033 11.712 4.713C11.5207 4.90567 11.2833 5.00133 11 5H5V19H11C11.2833 19 11.521 19.096 11.713 19.288C11.905 19.48 12.0007 19.7173 12 20C11.9993 20.2827 11.9033 20.5203 11.712 20.713C11.5207 20.9057 11.2833 21.0013 11 21H5ZM17.175 13H10C9.71667 13 9.47933 12.904 9.288 12.712C9.09667 12.52 9.00067 12.2827 9 12C8.99933 11.7173 9.09533 11.48 9.288 11.288C9.48067 11.096 9.718 11 10 11H17.175L15.3 9.125C15.1167 8.94167 15.025 8.71667 15.025 8.45C15.025 8.18333 15.1167 7.95 15.3 7.75C15.4833 7.55 15.7167 7.44567 16 7.437C16.2833 7.42833 16.525 7.52433 16.725 7.725L20.3 11.3C20.5 11.5 20.6 11.7333 20.6 12C20.6 12.2667 20.5 12.5 20.3 12.7L16.725 16.275C16.525 16.475 16.2877 16.571 16.013 16.563C15.7383 16.555 15.5007 16.4507 15.3 16.25C15.1167 16.05 15.0293 15.8127 15.038 15.538C15.0467 15.2633 15.1423 15.034 15.325 14.85L17.175 13Z" fill="black"/>
+                  <path d="M5 21C4.45 21 3.97933 20.8043 3.588 20.413C3.19667 20.0217 3.00067 19.5507 3 19V5C3 4.45 3.196 3.97933 3.588 3.588C3.98 3.19667 4.45067 3.00067 5 3H11C11.2833 3 11.521 3.096 11.713 3.288C11.905 3.48 12.0007 3.71733 12 4C11.9993 4.28267 11.9033 4.52033 11.712 4.713C11.5207 4.90567 11.2833 5.00133 11 5H5V19H11C11.2833 19 11.521 19.096 11.713 19.288C11.905 19.48 12.0007 19.7173 12 20C11.9993 20.2827 11.9033 20.5203 11.712 20.713C11.5207 20.9057 11.2833 21.0013 11 21H5ZM17.175 13H10C9.71667 13 9.47933 12.904 9.288 12.712C9.09667 12.52 9.00067 12.2827 9 12C8.99933 11.7173 9.09533 11.48 9.288 11.288C9.48067 11.096 9.718 11 10 11H17.175L15.3 9.125C15.1167 8.94167 15.025 8.71667 15.025 8.45C15.025 8.18333 15.1167 7.95 15.3 7.75C15.4833 7.55 15.7167 7.44567 16 7.437C16.2833 7.42833 16.525 7.52433 16.725 7.725L20.3 11.3C20.5 11.5 20.6 11.7333 20.6 12C20.6 12.2667 20.5 12.5 20.3 12.7L16.725 16.275C16.525 16.475 16.2877 16.571 16.013 16.563C15.7383 16.555 15.5007 16.4507 15.3 16.25C15.1167 16.05 15.0293 15.8127 15.038 15.538C15.0467 15.2633 15.1423 15.034 15.325 14.85L17.175 13Z" fill="black" />
                 </svg>
                 <span>Đăng xuất</span>
               </button>
@@ -455,10 +467,14 @@ export default function BanHang() {
                   </button>
                   <div className="text-[#323b4a]">{item.MASP}</div>
                   <div className="text-[#2d3138]">{item.TENSP}</div>
-                  <div className="flex items-center justify-center gap-2">
-                    <button onClick={() => updateQty(item.MASP, -1)} className="w-5 h-5 rounded-full bg-gray-200 text-gray-500 leading-none">−</button>
-                    <span className="w-7 text-center border-b border-gray-300 text-gray-700">{item.SOLUONG}</span>
-                    <button onClick={() => updateQty(item.MASP, 1)} className="w-5 h-5 rounded-full bg-gray-200 text-gray-500 leading-none">+</button>
+                  <div className="flex flex-col items-center justify-center gap-1">
+                    <div className="flex items-center gap-2">
+                      <button onClick={() => updateQty(item.MASP, -1)} className="w-5 h-5 rounded-full bg-gray-200 text-gray-500 leading-none">−</button>
+                      <span className={`w-7 text-center border-b border-gray-300 ${item.SOLUONG > (item.SL_TON || 0) ? 'text-red-500 font-bold' : 'text-gray-700'}`}>
+                        {item.SOLUONG}
+                      </span>
+                      <button onClick={() => updateQty(item.MASP, 1)} className="w-5 h-5 rounded-full bg-gray-200 text-gray-500 leading-none">+</button>
+                    </div>
                   </div>
                   <div className="text-right text-[#2d3138]">{fmtCurrency(item.GIABAN)}</div>
                   <div className="text-right font-bold text-black">{fmtCurrency(item.SOLUONG * item.GIABAN)}</div>

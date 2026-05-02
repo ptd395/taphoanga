@@ -19,29 +19,29 @@ const fmtDate = (s) => {
 const fmtShort = (s) => {
   if (!s) return '';
   const d = new Date(s);
-  return `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()}`;
+  return `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
 };
 
 // ── Quick-pick popup (Tháng này) ──────────────────────────────────────────────
 const QUICK_OPTIONS = [
-  { group: 'Theo ngày',  items: [{ label: 'Hôm nay', key: 'today' }, { label: 'Hôm qua', key: 'yesterday' }] },
-  { group: 'Theo tuần',  items: [{ label: 'Tuần này', key: 'thisWeek' }, { label: 'Tuần trước', key: 'lastWeek' }] },
+  { group: 'Theo ngày', items: [{ label: 'Hôm nay', key: 'today' }, { label: 'Hôm qua', key: 'yesterday' }] },
+  { group: 'Theo tuần', items: [{ label: 'Tuần này', key: 'thisWeek' }, { label: 'Tuần trước', key: 'lastWeek' }] },
   { group: 'Theo tháng', items: [{ label: 'Tháng này', key: 'thisMonth' }, { label: 'Tháng trước', key: 'lastMonth' }] },
-  { group: 'Theo năm',   items: [{ label: 'Năm này', key: 'thisYear' }, { label: 'Năm trước', key: 'lastYear' }] },
+  { group: 'Theo năm', items: [{ label: 'Năm này', key: 'thisYear' }, { label: 'Năm trước', key: 'lastYear' }] },
 ];
 
 function getRange(key) {
   const today = new Date();
   switch (key) {
-    case 'today':      return [format(today,'yyyy-MM-dd'), format(today,'yyyy-MM-dd')];
-    case 'yesterday':  { const y = subDays(today,1); return [format(y,'yyyy-MM-dd'), format(y,'yyyy-MM-dd')]; }
-    case 'thisWeek':   return [format(startOfWeek(today,{weekStartsOn:1}),'yyyy-MM-dd'), format(endOfWeek(today,{weekStartsOn:1}),'yyyy-MM-dd')];
-    case 'lastWeek':   { const lw = subWeeks(today,1); return [format(startOfWeek(lw,{weekStartsOn:1}),'yyyy-MM-dd'), format(endOfWeek(lw,{weekStartsOn:1}),'yyyy-MM-dd')]; }
-    case 'thisMonth':  return [format(startOfMonth(today),'yyyy-MM-dd'), format(today,'yyyy-MM-dd')];
-    case 'lastMonth':  { const lm = subMonths(today,1); return [format(startOfMonth(lm),'yyyy-MM-dd'), format(endOfMonth(lm),'yyyy-MM-dd')]; }
-    case 'thisYear':   return [format(startOfYear(today),'yyyy-MM-dd'), format(endOfYear(today),'yyyy-MM-dd')];
-    case 'lastYear':   { const ly = subYears(today,1); return [format(startOfYear(ly),'yyyy-MM-dd'), format(endOfYear(ly),'yyyy-MM-dd')]; }
-    default:           return [format(startOfMonth(today),'yyyy-MM-dd'), format(today,'yyyy-MM-dd')];
+    case 'today': return [format(today, 'yyyy-MM-dd'), format(today, 'yyyy-MM-dd')];
+    case 'yesterday': { const y = subDays(today, 1); return [format(y, 'yyyy-MM-dd'), format(y, 'yyyy-MM-dd')]; }
+    case 'thisWeek': return [format(startOfWeek(today, { weekStartsOn: 1 }), 'yyyy-MM-dd'), format(endOfWeek(today, { weekStartsOn: 1 }), 'yyyy-MM-dd')];
+    case 'lastWeek': { const lw = subWeeks(today, 1); return [format(startOfWeek(lw, { weekStartsOn: 1 }), 'yyyy-MM-dd'), format(endOfWeek(lw, { weekStartsOn: 1 }), 'yyyy-MM-dd')]; }
+    case 'thisMonth': return [format(startOfMonth(today), 'yyyy-MM-dd'), format(today, 'yyyy-MM-dd')];
+    case 'lastMonth': { const lm = subMonths(today, 1); return [format(startOfMonth(lm), 'yyyy-MM-dd'), format(endOfMonth(lm), 'yyyy-MM-dd')]; }
+    case 'thisYear': return [format(startOfYear(today), 'yyyy-MM-dd'), format(endOfYear(today), 'yyyy-MM-dd')];
+    case 'lastYear': { const ly = subYears(today, 1); return [format(startOfYear(ly), 'yyyy-MM-dd'), format(endOfYear(ly), 'yyyy-MM-dd')]; }
+    default: return [format(startOfMonth(today), 'yyyy-MM-dd'), format(today, 'yyyy-MM-dd')];
   }
 }
 
@@ -79,7 +79,7 @@ function QuickPickPopup({ activeKey, onSelect, onClose }) {
 }
 
 // ── Date Range Picker popup (Tùy chỉnh) ──────────────────────────────────────
-const DOW = ['T2','T3','T4','T5','T6','T7','CN'];
+const DOW = ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'];
 
 function CalendarMonth({ year, month, selecting, startDate, endDate, hoverDate, onDayClick, onDayHover }) {
   const firstDay = new Date(year, month, 1);
@@ -102,7 +102,7 @@ function CalendarMonth({ year, month, selecting, startDate, endDate, hoverDate, 
       </div>
       <div className="grid grid-cols-7">
         {cells.map((c, i) => {
-          if (!c.cur) return <div key={i} className="text-center text-xs text-gray-300 py-1.5">{String(c.day).padStart(2,'0')}</div>;
+          if (!c.cur) return <div key={i} className="text-center text-xs text-gray-300 py-1.5">{String(c.day).padStart(2, '0')}</div>;
           const ds = toStr(c.day);
           const isStart = ds === startDate;
           const isEnd = ds === endDate;
@@ -118,7 +118,7 @@ function CalendarMonth({ year, month, selecting, startDate, endDate, hoverDate, 
                   ${inRange || isHover ? 'bg-green-100 text-green-800 rounded-none' : ''}
                   ${!isStart && !isEnd && !inRange && !isHover ? 'hover:bg-gray-100 text-gray-700' : ''}`}
               >
-                {String(c.day).padStart(2,'0')}
+                {String(c.day).padStart(2, '0')}
               </button>
             </div>
           );
@@ -167,7 +167,7 @@ function DateRangePopup({ initStart, initEnd, onApply, onClose }) {
   };
 
   const displayStart = startDate ? fmtShort(startDate) : '--/--/----';
-  const displayEnd   = endDate   ? fmtShort(endDate)   : '--/--/----';
+  const displayEnd = endDate ? fmtShort(endDate) : '--/--/----';
 
   return (
     <div ref={ref} className="absolute left-0 top-full mt-1 z-50 bg-white rounded-xl shadow-xl border border-gray-100 p-4 w-[560px]">
@@ -230,26 +230,30 @@ function ExpandedInvoice({ invoice, onCancelled }) {
 
   const saveNote = async () => {
     setSaving(true);
-    try { await api.patch(`/hoadonban/${invoice.MAHDB}/ghichu`, { ghichu }); toast.success('Đã lưu ghi chú'); }
-    catch { toast.error('Lỗi lưu ghi chú'); } finally { setSaving(false); }
+    try { await api.patch(`/hoadonban/${invoice.MAHDB}/ghichu`, { ghichu }); toast.success(`Hóa đơn ${invoice.MAHDB} đã cập nhật thành công`); }
+    catch { toast.error('Cập nhật thất bại. Vui lòng thử lại sau'); } finally { setSaving(false); }
   };
 
   const cancelInvoice = async () => {
     setCancelling(true);
     try {
       await api.patch(`/hoadonban/${invoice.MAHDB}/huy`);
-      toast.success('Đã hủy hóa đơn'); setShowCancel(false); onCancelled();
-    } catch (err) { toast.error(err.response?.data?.message || 'Lỗi hủy hóa đơn'); }
+      toast.success(`Hủy hóa đơn ${invoice.MAHDB} thành công`);
+      setShowCancel(false);
+      onCancelled();
+    } catch (err) {
+      toast.error(`Có lỗi xảy ra. Hủy hóa đơn ${invoice.MAHDB} thất bại`);
+    }
     finally { setCancelling(false); }
   };
 
-  if (loading) return <tr><td colSpan={3} className="py-4 text-center text-gray-400 bg-green-50">Đang tải...</td></tr>;
+  if (loading) return <tr><td colSpan={5} className="py-4 text-center text-gray-400 bg-green-50">Đang tải...</td></tr>;
 
   const tongTien = detail?.TONGTIENHANG_BAN || 0;
 
   return (
     <tr>
-      <td colSpan={3} className="bg-white border-b border-gray-100 px-6 py-4">
+      <td colSpan={5} className="bg-white border-b border-gray-100 px-6 py-4">
         {/* Tab */}
         <div className="border-b border-gray-200 mb-4">
           <span className="inline-block text-sm font-semibold text-blue-500 border-b-2 border-blue-500 pb-2 pr-4">Thông tin</span>
@@ -411,7 +415,10 @@ export default function HoaDonBan() {
       setTotalPages(res.data.totalPages);
       const sum = res.data.totalAmount ?? res.data.items.reduce((acc, i) => acc + (parseFloat(i.TONGTIENHANG_BAN) || 0), 0);
       setTotalAmount(sum);
-    } catch { toast.error('Lỗi tải dữ liệu'); }
+      if ((search || searchItem) && res.data.items.length === 0) {
+        toast.error('Không tìm thấy giao dịch phù hợp');
+      }
+    } catch { toast.error('Xảy ra lỗi. Không thể lọc danh sách'); }
     finally { setLoading(false); }
   }, [page, search, searchItem, filterStatus, filterPTTT, tungay, denngay]);
 
@@ -570,6 +577,8 @@ export default function HoaDonBan() {
                 <th className="text-left py-3 px-6 font-bold text-gray-800">Mã hóa đơn</th>
                 <th className="text-left py-3 px-6 font-bold text-gray-800">Thời gian</th>
                 <th className="text-right py-3 px-6 font-bold text-gray-800">Tổng tiền hàng</th>
+                <th className="text-left py-3 px-6 font-bold text-gray-800">Tình trạng</th>
+                <th className="text-left py-3 px-6 font-bold text-gray-800">PT thanh toán</th>
               </tr>
             </thead>
             <tbody>
@@ -578,12 +587,14 @@ export default function HoaDonBan() {
                   <td className="py-3 px-6"></td>
                   <td className="py-3 px-6"></td>
                   <td className="py-3 px-6 text-right font-bold text-gray-800">{fmtCurrency(totalAmount)}</td>
+                  <td className="py-3 px-6"></td>
+                  <td className="py-3 px-6"></td>
                 </tr>
               )}
               {loading ? (
-                <tr><td colSpan={3} className="text-center py-12 text-gray-400">Đang tải...</td></tr>
+                <tr><td colSpan={5} className="text-center py-12 text-gray-400">Đang tải...</td></tr>
               ) : items.length === 0 ? (
-                <tr><td colSpan={3} className="text-center py-12 text-gray-400">Không có hóa đơn nào</td></tr>
+                <tr><td colSpan={5} className="text-center py-12 text-gray-400">Không tìm thấy giao dịch phù hợp</td></tr>
               ) : items.map(inv => (
                 <React.Fragment key={inv.MAHDB}>
                   <tr
@@ -593,6 +604,12 @@ export default function HoaDonBan() {
                     <td className="py-3 px-6 text-gray-700">{inv.MAHDB}</td>
                     <td className="py-3 px-6 text-gray-600">{fmtDate(inv.NGAYBAN)}</td>
                     <td className="py-3 px-6 text-right text-gray-700">{fmtCurrency(inv.TONGTIENHANG_BAN)}</td>
+                    <td className="py-3 px-6">
+                      <span className={`text-[12px] font-semibold px-2 py-0.5 rounded-full ${inv.TRANGTHAI_HDB === 'Hoàn thành' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-600'}`}>
+                        {inv.TRANGTHAI_HDB}
+                      </span>
+                    </td>
+                    <td className="py-3 px-6 text-gray-700">{inv.PTTT}</td>
                   </tr>
                   {expandedRow === inv.MAHDB && (
                     <ExpandedInvoice invoice={inv} onCancelled={() => { setExpandedRow(null); load(); }} />
@@ -608,10 +625,29 @@ export default function HoaDonBan() {
               <div className="flex gap-1">
                 <button disabled={page === 1} onClick={() => setPage(p => p - 1)}
                   className="px-3 py-1 rounded border text-sm disabled:opacity-40 hover:bg-gray-50">‹</button>
-                {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => i + 1).map(p => (
-                  <button key={p} onClick={() => setPage(p)}
-                    className={`px-3 py-1 rounded border text-sm ${page === p ? 'bg-green-600 text-white border-green-600' : 'hover:bg-gray-50'}`}>{p}</button>
-                ))}
+                {(() => {
+                  let start = Math.max(1, Number(page) - 2);
+                  let end = Math.min(totalPages, start + 4);
+                  if (end - start < 4) start = Math.max(1, end - 4);
+                  
+                  const pages = [];
+                  for (let i = start; i <= end; i++) pages.push(i);
+                  
+                  return pages.map(p => (
+                    <button
+                      key={p}
+                      type="button"
+                      onClick={() => setPage(p)}
+                      className={`px-3 py-1 rounded border text-sm transition-colors ${
+                        Number(page) === p
+                          ? 'bg-green-600 text-white border-green-600 font-bold'
+                          : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+                      }`}
+                    >
+                      {p}
+                    </button>
+                  ));
+                })()}
                 <button disabled={page === totalPages} onClick={() => setPage(p => p + 1)}
                   className="px-3 py-1 rounded border text-sm disabled:opacity-40 hover:bg-gray-50">›</button>
               </div>

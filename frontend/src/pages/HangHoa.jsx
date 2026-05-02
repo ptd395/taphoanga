@@ -604,7 +604,7 @@ export default function HangHoa() {
                 <div className="flex gap-1">
                   <button disabled={page === 1} onClick={() => setPage(p => p - 1)}
                     className="px-3 py-1 rounded border text-sm disabled:opacity-40 hover:bg-gray-50">‹</button>
-                  {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => i + 1).map(p => (
+                  {Array.from({ length: totalPages }, (_, i) => i + 1).map(p => (
                     <button key={p} onClick={() => setPage(p)}
                       className={`px-3 py-1 rounded border text-sm ${page === p ? 'bg-green-600 text-white border-green-600' : 'hover:bg-gray-50'}`}>{p}</button>
                   ))}

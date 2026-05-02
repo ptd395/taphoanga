@@ -63,7 +63,9 @@ router.get('/', auth, async (req, res) => {
     const total = parseInt(countResult.rows[0].cnt);
 
     const itemsResult = await pool.query(
-      `SELECT * FROM hoadonban ${where} ORDER BY ngayban DESC LIMIT $${paramIndex} OFFSET $${paramIndex + 1}`,
+      `SELECT hdb.*, 
+              (SELECT string_agg(masp, ', ') FROM ct_hoadonban WHERE mahdb = hdb.mahdb) as mahang_list
+       FROM hoadonban hdb ${where} ORDER BY ngayban DESC LIMIT $${paramIndex} OFFSET $${paramIndex + 1}`,
       [...params, parseInt(limit), offset]
     );
 
